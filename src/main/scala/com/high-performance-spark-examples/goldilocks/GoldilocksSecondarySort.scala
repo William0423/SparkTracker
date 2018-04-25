@@ -8,15 +8,18 @@ import scala.collection.Map
 import scala.collection.mutable.ArrayBuffer
 
 //tag::colIndex_partition[]
-class ColumnIndexPartition(override val numPartitions: Int)
-  extends Partitioner {
-  require(numPartitions >= 0, s"Number of partitions " +
-    s"($numPartitions) cannot be negative.")
+class ColumnIndexPartition(override val numPartitions: Int) extends Partitioner {
+
+  require(numPartitions >= 0, s"Number of partitions " + s"($numPartitions) cannot be negative.")
 
   override def getPartition(key: Any): Int = {
+
     val k = key.asInstanceOf[(Int, Double)]
+
     Math.abs(k._1) % numPartitions //hashcode of column index
+
   }
+
 }
 //end::colIndex_partition[]
 
@@ -61,14 +64,17 @@ object GoldilocksSecondarySort {
    * @return map of (column index, list of target ranks)
    */
   //tag::goldilocksSecondarySort[]
-  def findRankStatistics(dataFrame: DataFrame,
-    targetRanks: List[Long], partitions: Int) = {
+  def findRankStatistics(dataFrame: DataFrame, targetRanks: List[Long], partitions: Int) = {
+    println("||||||||||||||||||  //tag::goldilocksSecondarySort[]\n  def findRankStatistics(dataFrame: DataFrame, targetRanks: List[Long], partitions: Int) = {")
+    dataFrame.show()
 
-    val pairRDD: RDD[((Int, Double), Int)] =
-      GoldilocksGroupByKey.mapToKeyValuePairs(dataFrame).map((_, 1))
+    val pairRDD: RDD[((Int, Double), Int)] = GoldilocksGroupByKey.mapToKeyValuePairs(dataFrame).map((_, 1))
 
     val partitioner = new ColumnIndexPartition(partitions)
-     //sort by the existing implicit ordering on tuples first key, second key
+
+    println(partitioner)
+
+    //sort by the existing implicit ordering on tuples first key, second key
     val sorted = pairRDD.repartitionAndSortWithinPartitions(partitioner)
 
     //filter for target ranks
@@ -121,15 +127,18 @@ object GoldilocksSecondarySort {
 
 object GoldilocksSecondarySortV2{
 
-  def findRankStatistics(dataFrame: DataFrame,
-  ranks: List[Long], partitions : Int = 2) : Map[Int, Iterable[Double]] = {
+  def findRankStatistics(dataFrame: DataFrame, ranks: List[Long], partitions : Int = 2) : Map[Int, Iterable[Double]] = {
+
     val pairRDD = GoldilocksGroupByKey.mapToKeyValuePairs(dataFrame)
+
     val partitioner = new ColumnIndexPartition(partitions)
+
     val sorted = pairRDD.map((_, 1)).repartitionAndSortWithinPartitions(partitioner)
-    val filterForTargetIndex= sorted.keys.mapPartitions(iter => {
-        filterAndGroupRanks(iter, ranks)
-    }, true)
+
+    val filterForTargetIndex= sorted.keys.mapPartitions(iter => {filterAndGroupRanks(iter, ranks)}, true)
+
     filterForTargetIndex.collectAsMap()
+
   }
 
   /**

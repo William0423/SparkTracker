@@ -2,11 +2,45 @@ package  com.highperformancespark.examples.goldilocks
 
 import org.apache.spark.HashPartitioner
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSession
 
 import scala.collection.Map
 import scala.reflect.ClassTag
 
 object RDDJoinExamples {
+
+
+  /**
+    * 给RDD做join,那么dataframe是如何实现的？
+    * @param args
+    */
+  def main(args: Array[String]): Unit = {
+
+    val sparkSession = SparkSession.builder().master("local[2]").getOrCreate()
+    val sc = sparkSession.sparkContext
+
+    val keySet = "a, b, c, d, e, f, g".split(",")
+
+    val smallRDD = sc.parallelize(keySet.map(letter => (letter, letter.hashCode)))
+    smallRDD.collect().foreach(println)
+
+    // 对于每个letter,flatMap一个RDD[(String, Double)]
+    val largeRDD: RDD[(String, Double)] = sc.parallelize(keySet.flatMap{ letter => Range(1, 50).map(i => (letter, letter.hashCode() / i.toDouble))})
+    largeRDD.collect().foreach(println)
+
+
+    println("+++++++++++")
+//    把相同的id合在一起
+    val result: RDD[(String, (Double, Int))] = RDDJoinExamples.manualBroadCastHashJoin(largeRDD, smallRDD)
+    result.collect().foreach(println)
+
+
+    val nativeJoin: RDD[(String, (Double, Int))] = largeRDD.join(smallRDD)
+
+    assert(result.subtract(nativeJoin).count == 0)
+
+
+  }
 
  /* For Example, suppose we have one RDD with some data in the form (Panda id, score)
  and another RDD with (Panda id, address), and we want to send each Panda some mail
@@ -104,10 +138,9 @@ object RDDJoinExamples {
    * @return
    */
  //tag::coreBroadCast[]
- def manualBroadCastHashJoin[K : Ordering : ClassTag, V1 : ClassTag,
- V2 : ClassTag](bigRDD : RDD[(K, V1)],
-  smallRDD : RDD[(K, V2)])= {
-  val smallRDDLocal: Map[K, V2] = smallRDD.collectAsMap()
+ def manualBroadCastHashJoin[K : Ordering : ClassTag, V1 : ClassTag, V2 : ClassTag](bigRDD : RDD[(K, V1)], smallRDD : RDD[(K, V2)])= {
+
+   val smallRDDLocal: Map[K, V2] = smallRDD.collectAsMap()
   val smallRDDLocalBcast = bigRDD.sparkContext.broadcast(smallRDDLocal)
   bigRDD.mapPartitions(iter => {
    iter.flatMap{
