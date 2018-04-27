@@ -21,12 +21,20 @@ object RDDJoinExamples {
 
     val keySet = "a, b, c, d, e, f, g".split(",")
 
-    val smallRDD = sc.parallelize(keySet.map(letter => (letter, letter.hashCode)))
-    smallRDD.collect().foreach(println)
+    /**
+      * (a,97)
+      * ( b,1090)
+      * ( c,1091)
+      * ( d,1092)
+      * ( e,1093)
+      * ( f,1094)
+      * ( g,1095)
+      */
+    val smallRDD:RDD[(String, Int)] = sc.parallelize(keySet.map(letter => (letter, letter.hashCode)))
 
+    sc.parallelize(keySet.flatMap{ letter => Range(1, 50).map(i => (letter, letter.hashCode() / i.toDouble))})
     // 对于每个letter,flatMap一个RDD[(String, Double)]
     val largeRDD: RDD[(String, Double)] = sc.parallelize(keySet.flatMap{ letter => Range(1, 50).map(i => (letter, letter.hashCode() / i.toDouble))})
-    largeRDD.collect().foreach(println)
 
 
     println("+++++++++++")
@@ -141,6 +149,9 @@ object RDDJoinExamples {
  def manualBroadCastHashJoin[K : Ordering : ClassTag, V1 : ClassTag, V2 : ClassTag](bigRDD : RDD[(K, V1)], smallRDD : RDD[(K, V2)])= {
 
    val smallRDDLocal: Map[K, V2] = smallRDD.collectAsMap()
+
+   println(smallRDDLocal)
+
   val smallRDDLocalBcast = bigRDD.sparkContext.broadcast(smallRDDLocal)
   bigRDD.mapPartitions(iter => {
    iter.flatMap{
