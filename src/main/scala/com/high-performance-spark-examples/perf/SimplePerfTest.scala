@@ -28,35 +28,44 @@ import org.apache.spark.sql.types._
  * A simple performance test to compare a simple sort between DataFrame, and RDD
  */
 object SimplePerfTest {
+
   def main(args: Array[String]) = {
     val sparkConf = new SparkConf().setAppName("simple-perf-test")
-    val sparkSession = SparkSession.builder().enableHiveSupport().getOrCreate()
+
+    val sparkSession = SparkSession.builder().master("local[2]").enableHiveSupport().getOrCreate()
+
     val sc = sparkSession.sparkContext
     val scalingFactor = if (args.length > 0) args(0).toLong else 100L
     val size = if (args.length > 1) args(1).toInt else 50
     run(sc, sparkSession, scalingFactor, size)
+
   }
 
-  def run(sc: SparkContext, session: SparkSession,
-    scalingFactor: Long, size: Int) = {
+  def run(sc: SparkContext, session: SparkSession, scalingFactor: Long, size: Int) = {
+
     import session.implicits._
-    val inputRDD = GenerateScalingData.generateFullGoldilocks(
-      sc, scalingFactor, size)
+
+    val inputRDD = GenerateScalingData.generateFullGoldilocks(sc, scalingFactor, size)
+
     val pairRDD = inputRDD.map(p => (p.zip.toInt, p.attributes(0)))
     pairRDD.cache()
     pairRDD.count()
+
     val rddTimeings = 1.to(10).map(x => time(testOnRDD(pairRDD)))
     val groupTimeings = 1.to(10).map(x => time(groupOnRDD(pairRDD)))
     val df = inputRDD.toDF()
-    val inputDataFrame = df.select(
-      df("zip").cast(IntegerType),
-      df("attributes")(0).as("fuzzyness").cast(DoubleType))
+
+    val inputDataFrame = df.select(df("zip").cast(IntegerType), df("attributes")(0).as("fuzzyness").cast(DoubleType))
+
     inputDataFrame.cache()
     inputDataFrame.count()
+
     val dataFrameTimeings = 1.to(10).map(x => time(testOnDataFrame(inputDataFrame)))
+
     println(rddTimeings.map(_._2).mkString(","))
     println(groupTimeings.map(_._2).mkString(","))
     println(dataFrameTimeings.map(_._2).mkString(","))
+
   }
 
   def testOnRDD(rdd: RDD[(Int, Double)]) = {
@@ -81,4 +90,5 @@ object SimplePerfTest {
     println(s"Time ${t1 - t0}ns")
     (result, t1 - t0)
   }
+
 }

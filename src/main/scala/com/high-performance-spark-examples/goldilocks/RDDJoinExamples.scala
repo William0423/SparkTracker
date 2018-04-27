@@ -48,6 +48,23 @@ object RDDJoinExamples {
     assert(result.subtract(nativeJoin).count == 0)
 
 
+    /**
+      * (D,(CompactBuffer(),CompactBuffer(d),CompactBuffer()))
+        (A,(CompactBuffer(1),CompactBuffer(a),CompactBuffer(A)))
+        (E,(CompactBuffer(),CompactBuffer(),CompactBuffer(E)))
+        (B,(CompactBuffer(2),CompactBuffer(),CompactBuffer()))
+        (C,(CompactBuffer(3),CompactBuffer(c),CompactBuffer()))
+      */
+    val rdd1 = sc.makeRDD(Array(("A","1"),("B","2"),("C","3")),4)
+    val rdd2 = sc.makeRDD(Array(("A","a"),("C","c"),("D","d")),2)
+    val rdd3 = sc.makeRDD(Array(("A","A"),("E","E")),2)
+
+    val rdd4 = rdd1.cogroup(rdd2,rdd3)
+    println(rdd4.partitions.size)
+    rdd4.collect().foreach(println)
+
+
+
   }
 
  /* For Example, suppose we have one RDD with some data in the form (Panda id, score)
@@ -79,12 +96,21 @@ object RDDJoinExamples {
   //end::leftOuterJoinScoresWithAddress[]
 
   //tag::joinScoresWithAddressFast[]
+
+  /**
+    * 先进行reduce，会比joinScoresWithAddress1要快？
+    * @param scoreRDD
+    * @param addressRDD
+    * @return
+    */
   def joinScoresWithAddress2(scoreRDD : RDD[(Long, Double)],
     addressRDD: RDD[(Long, String)]) : RDD[(Long, (Double, String))]= {
    val bestScoreData = scoreRDD.reduceByKey((x, y) => if(x > y) x else y)
    bestScoreData.join(addressRDD)
   }
   //end::joinScoresWithAddressFast[]
+
+
 /*
  We could make the example in the previous section even faster,
  by using the partitioner for the address data as an argument for
@@ -100,18 +126,23 @@ object RDDJoinExamples {
       case (Some(p)) => p
       case (None) => new HashPartitioner(addressRDD.partitions.length)
     }
-    val bestScoreData = scoreRDD.reduceByKey(addressDataPartitioner,
-      (x, y) => if(x > y) x else y)
+
+    val bestScoreData = scoreRDD.reduceByKey(addressDataPartitioner, (x, y) => if(x > y) x else y)
+
     bestScoreData.join(addressRDD)
+
   }
  //end::joinScoresWithAddress3[]
 
-  def debugString(scoreRDD: RDD[(Long, Double)],
-    addressRDD: RDD[(Long, String)])  = {
+
+
+  def debugString(scoreRDD: RDD[(Long, Double)], addressRDD: RDD[(Long, String)])  = {
     //tag::debugString[]
     scoreRDD.join(addressRDD).toDebugString
     //end::debugString[]
   }
+
+
 
  /*
   *  Suppose we had two datasets of information about each panda,
@@ -119,11 +150,9 @@ object RDDJoinExamples {
   *  We could use cogroup to associate each Pandas id with an iterator
   *  of their scores and another iterator of their favorite foods.
   */
- def coGroupExample(scoreRDD: RDD[(Long, Double)], foodRDD: RDD[(Long, String)],
-  addressRDD: RDD[(Long, String)]) = {
+ def coGroupExample(scoreRDD: RDD[(Long, Double)], foodRDD: RDD[(Long, String)], addressRDD: RDD[(Long, String)]) = {
    //tag::coGroupExample1[]
-   val cogroupedRDD: RDD[(Long, (Iterable[Double], Iterable[String]))] =
-     scoreRDD.cogroup(foodRDD)
+   val cogroupedRDD: RDD[(Long, (Iterable[Double], Iterable[String]))] = scoreRDD.cogroup(foodRDD)
    //end::coGroupExample1[]
 
    /*
