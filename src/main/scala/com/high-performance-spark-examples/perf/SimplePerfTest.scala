@@ -73,18 +73,33 @@ object SimplePerfTest {
     // demo: RawPanda(1,2691,giant,true,[D@617389a)
     val pairRDD = inputRDD.map(p => (p.zip.toInt, p.attributes(0)))
     pairRDD.cache()
-    pairRDD.count()
+    // 调用count 会导致第一次计算 RDD。
+    pairRDD.count() // 100
 
-    val rddTimeings = 1.to(10).map(x => time(testOnRDD(pairRDD)))
-    val groupTimeings = 1.to(10).map(x => time(groupOnRDD(pairRDD)))
+    val tempBd = sc.broadcast(1)
+    // 做10次map
+    val rddTimeings = 1.to(tempBd.value).map(x => time(testOnRDD(pairRDD)))
+    println(">>>>>>>>>>>>>>>>>>>>>rddTimeings")
+    // Vector((100,126813780))
+    println(rddTimeings)
+
+    val groupTimeings = 1.to(tempBd.value).map(x => time(groupOnRDD(pairRDD)))
 
     // rdd to dataframe
     val df = inputRDD.toDF()
     val inputDataFrame = df.select(df("zip").cast(IntegerType), df("attributes")(0).as("fuzzyness").cast(DoubleType))
     inputDataFrame.cache()
     inputDataFrame.count()
+    /**
+      * root
+          |-- zip: integer (nullable = true)
+          |-- fuzzyness: double (nullable = true)
+      */
+    inputDataFrame.printSchema()
+    inputDataFrame.show()
 
-    val dataFrameTimeings = 1.to(10).map(x => time(testOnDataFrame(inputDataFrame)))
+    val dataFrameTimeings = 1.to(tempBd.value).map(x => time(testOnDataFrame(inputDataFrame)))
+
 
     /**
       * 213878398,104531981,79756548,109261023,111954594,88327038,68668609,69592331,72732983,64293045
@@ -97,13 +112,20 @@ object SimplePerfTest {
 
   }
 
+  /**
+    * 一次reduceByKey
+    * @param rdd
+    * @return
+    */
   def testOnRDD(rdd: RDD[(Int, Double)]) = {
-    rdd.map{case (x, y) => (x, (y, 1))}.reduceByKey{case (x, y) => (x._1 + y._1, x._2 + y._2)}.count()
+    val result = rdd.map{case (x, y) => (x, (y, 1))}.reduceByKey{case (x, y) => (x._1 + y._1, x._2 + y._2)}
+//    result.collect().foreach(println)
+    result.count()
   }
 
+
   def groupOnRDD(rdd: RDD[(Int, Double)]) = {
-    rdd.groupByKey().mapValues{v =>
-      v.aggregate((0.0, 0))({case (x, y) => (x._1 + y, x._2 + 1)},
+    rdd.groupByKey().mapValues{v => v.aggregate((0.0, 0))({case (x, y) => (x._1 + y, x._2 + 1)},
         {case (x, y) => (x._1 + y._1, x._2 + y._2)})}.count()
   }
 
