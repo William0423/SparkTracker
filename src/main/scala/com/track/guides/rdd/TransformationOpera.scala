@@ -227,6 +227,8 @@ object TransformationOpera {
   private def zipRDD(sc: SparkContext): Unit = {
     val rdd1 = sc.makeRDD(1 to 10,2)
     val rdd2 = sc.makeRDD(Seq("A","B","C","D","E"),2)
+    var rdd3 = sc.makeRDD(Seq("a","b","c","d","e"),2)
+
     // 按照分区，需要判断是否还存在元素
     rdd1.zipPartitions(rdd2) {
       (rdd1Iter, rdd2Iter) => {
@@ -237,7 +239,21 @@ object TransformationOpera {
         result.iterator
       }
     }.collect().foreach(println)
+
+
     // 三个rdd做zip
+    var rdd4 = rdd1.zipPartitions(rdd2,rdd3){
+      (rdd1Iter,rdd2Iter,rdd3Iter) => {
+
+        var result = List[String]()
+        while(rdd1Iter.hasNext && rdd2Iter.hasNext && rdd3Iter.hasNext) {
+          result::=(rdd1Iter.next() + "_" + rdd2Iter.next() + "_" + rdd3Iter.next())
+        }
+        result.iterator
+      }
+    }
+
+
   }
 
 
