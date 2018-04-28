@@ -29,10 +29,11 @@ object GenerateScalingData {
     println(zipRDD.partitions.size)
 //    zipRDD.collect().foreach(println)
     val valuesRDD = RandomRDDs.normalVectorRDD(sc, numRows = rows, numCols = numCols).repartition(zipRDD.partitions.size) // 100x50列
+    println(">>>>>>>>>>>>>>>valuesRDD")
     println(valuesRDD.partitions.size)
 //    valuesRDD.take(1).foreach(x=>println(x.size))
     val keyRDD = sc.parallelize(1L.to(rows), zipRDD.getNumPartitions)
-    println((keyRDD.partitions.size))
+//    println((keyRDD.partitions.size))
     // 备注：这三个RDD的partition需要相同
     val iteratorResult = keyRDD.zipPartitions(zipRDD, valuesRDD) { // 按照分区zip作。
       (i1, i2, i3) => // 这三个参数分别对应keyRDD、zipRDD、valuesRDD

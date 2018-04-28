@@ -24,7 +24,7 @@ object Accumulators {
     // accumulator still has zero value
     // Note: This example is dangerous since the transformation may be
     // evaluated multiple times.
-    transformed.count() // force evaluation
+    transformed.count() // force evaluation：强制计算
 
     println(">>>>>>>>>>>>>>>>>>>>>>>>>")
 
@@ -39,14 +39,15 @@ object Accumulators {
    * id and zip pair for sorting.
    */
   //tag::maxFuzzyAcc[]
-  def computeMaxFuzzyNess(sc: SparkContext, rdd: RDD[RawPanda]):
-      (RDD[(String, Long)], Double) = {
+  def computeMaxFuzzyNess(sc: SparkContext, rdd: RDD[RawPanda]): (RDD[(String, Long)], Double) = {
+
     object MaxDoubleParam extends AccumulatorParam[Double] {
       override def zero(initValue: Double) = initValue
       override def addInPlace(r1: Double, r2: Double): Double = {
         Math.max(r1, r2)
       }
     }
+
     // Create an accumulator with the initial value of Double.MinValue
     val acc = sc.accumulator(Double.MinValue)(MaxDoubleParam) //
     var v = 0.0
@@ -106,7 +107,6 @@ object Accumulators {
     val input = sc.parallelize(1.to(100)).map(x =>
       RawPanda(1L, "1", "red", true, Array(x.toDouble)))
     val (_, sum) = Accumulators.computeTotalFuzzyNess(sc, input)
-
-
   }
+
 }
