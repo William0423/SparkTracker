@@ -1,4 +1,4 @@
-package com.track.guides.rdd
+package com.track.guides.rdd.operator
 
 import org.apache.spark.sql.SparkSession
 

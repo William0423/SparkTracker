@@ -97,16 +97,16 @@ object Accumulators {
     val sparkSession = SparkSession.builder().master("local[2]").getOrCreate()
     val sc = sparkSession.sparkContext
 
-//    val input = sc.parallelize(1.to(100)).map(x =>
-//      RawPanda(5L, "15", "red", true, Array(x.toDouble)))
-//    println("######################")
-//    input.collect().foreach(x=>println(x.attributes(0)))
-//    println("<<<<<<<<<<<<<<<<<<<<<<")
-//    val (_, max) = Accumulators.computeMaxFuzzyNess(sc, input)
-
     val input = sc.parallelize(1.to(100)).map(x =>
-      RawPanda(1L, "1", "red", true, Array(x.toDouble)))
-    val (_, sum) = Accumulators.computeTotalFuzzyNess(sc, input)
+      RawPanda(5L, "15", "red", true, Array(x.toDouble)))
+    println("######################")
+    input.collect().foreach(x=>println(x.attributes(0)))
+    println("<<<<<<<<<<<<<<<<<<<<<<")
+    val (_, max) = Accumulators.computeMaxFuzzyNess(sc, input)
+
+//    val input = sc.parallelize(1.to(100)).map(x =>
+//      RawPanda(1L, "1", "red", true, Array(x.toDouble)))
+//    val (_, sum) = Accumulators.computeTotalFuzzyNess(sc, input)
   }
 
 }
