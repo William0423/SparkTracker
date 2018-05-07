@@ -1,1 +1,1 @@
-examples from LearningSpark(https://github.com/spirom/LearningSpark)
+examples from LearningSpark[https://github.com/spirom/LearningSpark]
