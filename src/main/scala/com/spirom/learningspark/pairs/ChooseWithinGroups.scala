@@ -21,6 +21,9 @@ object ChooseWithinGroups {
     )
     val peopleRows = sc.parallelize(people, 4)
 
+    /**
+      * 定义第二到第五个元素的类型
+      */
     type Payload = (String, String, String, Int)
 
     //
@@ -45,6 +48,10 @@ object ChooseWithinGroups {
       }
 
       val withMax: RDD[(Int, Payload)] =
+
+      /**
+        * key相同的情况下，取age较大的值
+        */
         pairs.reduceByKey(combine)
 
       withMax.collect().foreach(println)
