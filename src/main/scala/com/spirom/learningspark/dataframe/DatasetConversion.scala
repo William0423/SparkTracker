@@ -19,6 +19,7 @@ object DatasetConversion {
         .master("local[4]")
         .getOrCreate()
 
+    spark.sparkContext.setLogLevel("ERROR")
     import spark.implicits._
 
     // create a sequence of case class objects

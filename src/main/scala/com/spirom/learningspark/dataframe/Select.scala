@@ -14,6 +14,8 @@ object Select {
         .master("local[4]")
         .getOrCreate()
 
+    spark.sparkContext.setLogLevel("ERROR")
+
     import spark.implicits._
 
     // create an RDD with some data

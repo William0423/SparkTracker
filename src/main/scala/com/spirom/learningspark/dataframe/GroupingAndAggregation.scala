@@ -10,11 +10,16 @@ object GroupingAndAggregation {
   case class Cust(id: Integer, name: String, sales: Double, discount: Double, state: String)
 
   def main(args: Array[String]) {
+
+
     val spark =
       SparkSession.builder()
         .appName("DataFrame-GroupingAndAggregation")
         .master("local[4]")
         .getOrCreate()
+
+    val sparkContext = spark.sparkContext
+    sparkContext.setLogLevel("ERROR")
 
     import spark.implicits._
 
@@ -29,6 +34,8 @@ object GroupingAndAggregation {
     )
     // make it an RDD and convert to a DataFrame
     val customerDF = spark.sparkContext.parallelize(custs, 4).toDF()
+
+    customerDF.show()
 
     // groupBy() produces a GroupedData, and you can't do much with
     // one of those other than aggregate it -- you can't even print it

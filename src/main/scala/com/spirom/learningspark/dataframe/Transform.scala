@@ -16,6 +16,7 @@ object Transform {
         .appName("DataFrame-Transform")
         .master("local[4]")
         .getOrCreate()
+    spark.sparkContext.setLogLevel("ERROR")
 
     import spark.implicits._
 
